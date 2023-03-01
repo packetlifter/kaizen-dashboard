@@ -12,8 +12,6 @@ def main(config_file):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
-    
-
     es = Elasticsearch(config['es_host'],basic_auth=(config['es_username'],config['es_password'],),verify_certs=False)    
     try:
         es.indices.delete(index=config['es_index_name'])
@@ -26,9 +24,9 @@ def main(config_file):
     for spreadsheet in sa.list_spreadsheet_files():
         squammies_dict[spreadsheet['name']] = {}
 
-        squammy_sheet = sa.open(spreadsheet['name'])
+        kaizen_sheet = sa.open(spreadsheet['name'])
 
-        for week in squammy_sheet:
+        for week in kaizen_sheet:
             
             if not week.title.startswith('W'):
                 continue
@@ -102,8 +100,8 @@ def main(config_file):
                 
                 dict_item = dict(zip(tracker_keys, item))
                 
-                dict_item['week'] = week.title
-                dict_item['squammy_name'] = shortened_name(spreadsheet['name'],config['name_mappings'])
+                dict_item['week'] = week.title.replace('W','Week ')
+                dict_item['member_name'] = shortened_name(spreadsheet['name'],config['name_mappings'])
                 
                 if week.title != 'W1':
                 
