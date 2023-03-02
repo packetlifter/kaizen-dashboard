@@ -7,20 +7,32 @@ import datetime
 import yaml
 import sys
 
-def main(config_file):
+def main(config_file, init):
+    
 
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
     es = Elasticsearch(config['es_host'],basic_auth=(config['es_username'],config['es_password'],),verify_certs=False)    
-    try:
-        es.indices.delete(index=config['es_index_name'])
-    except NotFoundError:
-        pass
+
 
     squammies_dict = {}
 
     sa = gspread.service_account(filename=config['gssa_file'])
+
+    ss_weeks = get_kaizen_weeks(init)
+
+    if len(ss_weeks) < 2:
+                
+        index_name = config['es_index_name'] + "-current_week"
+    else:
+        index_name = config['es_index_name'] + "-init"
+ 
+    try:
+        es.indices.delete(index=index_name)
+    except NotFoundError:
+        pass
+
     for spreadsheet in sa.list_spreadsheet_files():
         squammies_dict[spreadsheet['name']] = {}
 
@@ -28,7 +40,7 @@ def main(config_file):
 
         for week in kaizen_sheet:
             
-            if not week.title.startswith('W'):
+            if not week.title in ss_weeks:
                 continue
             
             row_values = week.get_all_values()
@@ -114,10 +126,13 @@ def main(config_file):
                 dict_item['week_score'] = float(percent_score)
                 
                 kaizen_data.append(dict_item)
+
+            
+                
         
             actions = [
             {
-                "_index": config['es_index_name'],
+                "_index": index_name,
                 "_source": item,
                 
             }
@@ -126,7 +141,7 @@ def main(config_file):
         
     
             bulk(es, actions)
-        time.sleep(10)    
+        #time.sleep(10)    
         
 def shortened_name(name,mappings):
     
@@ -140,5 +155,68 @@ def shortened_name(name,mappings):
 
     return short_name
 
+def get_kaizen_weeks(init):
+
+    weeks_map = {
+        "04": "W1",
+        "05": "W2",
+        "06": "W3",
+        "07": "W4",
+        "08": "W5",
+        "09": "W6",
+        "10": "W7",
+        "11": "W8",
+        "12": "W9",
+        "13": "W10",
+        "14": "W11",
+        "15": "W12",
+        "16": "W13",
+        "17": "W14",
+        "18": "W15",
+    }
+
+    # Define the start and end dates for the range of weeks you want to create
+    start_date = datetime.date(2023, 1, 23)
+    end_date = datetime.date(2023, 5, 7)
+    
+    # Create an empty dictionary to store the weeks and their corresponding dates
+    weeks_dict = {}
+    
+    # Loop through each week in the range of dates and add it to the dictionary
+    while start_date <= end_date:
+        week_start = start_date - datetime.timedelta(days=start_date.weekday())  # Get the Monday of this week
+        week_num = week_start.strftime("%U")  # Get the week number as a string
+        week_num = weeks_map[week_num]
+        if week_num not in weeks_dict:
+            weeks_dict[week_num] = []  # Create an empty list for this week
+        weeks_dict[week_num].append(start_date.strftime("%m/%d/%Y"))  # Add the current date to the list
+        start_date += datetime.timedelta(days=1)  # Move to the next day
+    
+    current_date = datetime.date.today().strftime("%m/%d/%Y")
+
+    kaizen_weeks_list = []
+
+    for week, days in weeks_dict.items():
+        kaizen_weeks_list.append(week)
+        if current_date in days:
+            current_week = week
+
+    if init:
+        end_index = kaizen_weeks_list.index(current_week)
+        weeks_list = kaizen_weeks_list[:end_index]
+        return weeks_list 
+    else:
+    
+        week_now = []
+        week_now.append(current_week)
+        return week_now
+    
+
+    
 if __name__ == '__main__':
-    main(sys.argv[1])
+
+    if len(sys.argv) == 3:
+        main(sys.argv[1],sys.argv[2])
+    else:
+        main(sys.argv[1],None)
+    
