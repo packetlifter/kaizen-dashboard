@@ -38,12 +38,16 @@ def main(config_file, init):
 
         kaizen_sheet = sa.open(spreadsheet['name'])
 
-        for week in kaizen_sheet:
+        for sheet in kaizen_sheet:
+
+            if sheet.title == 'Setup':
+                
+                weight_setup = sheet.acell('E21').value
             
-            if not week.title in ss_weeks:
+            if not sheet.title in ss_weeks:
                 continue
             
-            row_values = week.get_all_values()
+            row_values = sheet.get_all_values()
             
             spreadsheet_data = {
                 "days": row_values[11],
@@ -82,7 +86,7 @@ def main(config_file, init):
                     actual_data = list(map(float,actual_data)) # convert to float
                     
                     if key == 'weigh_ins':             
-                        spreadsheet_data_clean[key] = [ item*2.2 if item < 100 else item for item in actual_data]
+                        spreadsheet_data_clean[key] = [ item*2.2 if weight_setup  == 'kg' else item for item in actual_data]
                     else:
                         spreadsheet_data_clean[key] = actual_data
 
@@ -112,10 +116,10 @@ def main(config_file, init):
                 
                 dict_item = dict(zip(tracker_keys, item))
                 
-                dict_item['week'] = week.title.replace('W','Week ')
+                dict_item['week'] = sheet.title.replace('W','Week ')
                 dict_item['member_name'] = shortened_name(spreadsheet['name'],config['name_mappings'])
                 
-                if week.title != 'W1':
+                if sheet.title != 'W1':
                 
                     weight_change = row_values[1][3]
                     percent_change = weight_change.split()[1].replace('(','').replace(')','').replace('%','')
