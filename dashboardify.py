@@ -9,8 +9,8 @@ import sys
 import logging
 import urllib3
 urllib3.disable_warnings()
-
-logging.basicConfig(filename='dashboard.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(message)s', )
+logging.basicConfig(filename='dashboard.log', filemode='w',format='%(asctime)s - %(message)s',level=logging.INFO)
 
 def main(config_file, init):
     
