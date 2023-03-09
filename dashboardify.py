@@ -6,6 +6,10 @@ from elasticsearch import NotFoundError
 import datetime
 import yaml
 import sys
+import logging
+import urllib3
+urllib3.disable_warnings()
+logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 
 def main(config_file, init):
     
@@ -118,7 +122,8 @@ def main(config_file, init):
                 
                 dict_item['week'] = sheet.title.replace('W','Week ')
                 dict_item['member_name'] = shortened_name(spreadsheet['name'],config['name_mappings'])
-                
+                #if dict_item['member_name'] == 'Marla':
+                #    import ipdb; ipdb.set_trace()
                 if sheet.title != 'W1':
                 
                     weight_change = row_values[1][3]
@@ -145,7 +150,8 @@ def main(config_file, init):
         
     
             bulk(es, actions)
-        #time.sleep(10)    
+
+    logging.info(f"Pushed data for Team {config['es_index_name']}") 
         
 def shortened_name(name,mappings):
     
