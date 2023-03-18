@@ -29,6 +29,7 @@ def main(config_file, init):
 
     ss_weeks = get_kaizen_weeks(init)
     
+    
 
     for spreadsheet in sa.list_spreadsheet_files(): # iterate through the spreadsheets in each service account/ team
 
@@ -154,7 +155,7 @@ def main(config_file, init):
                 kaizen_data.append(dict_item)
 
             
-            index_name = f"{config['es_index_name']}-{member_name.lower().replace(' ','')}-{sheet.title.lower()}"
+            index_name = f"kaizen-{config['es_index_name']}-{member_name.lower().replace(' ','')}-{sheet.title.lower()}"
 
 
             
@@ -173,7 +174,10 @@ def main(config_file, init):
                     es.indices.delete(index=index_name)
                 except NotFoundError:
                     pass
-                bulk(es, actions)
+                try:
+                    bulk(es, actions)
+                except Exception as e:
+                    logging.error(f"Error pushing data {actions}") 
             except AuthenticationException:
                 es = Elasticsearch(config['es_host'],http_auth=(config['es_username'],config['es_password'],),verify_certs=False)
                 try:
