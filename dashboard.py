@@ -25,8 +25,11 @@ def main(config_file, init):
     
     squammies_dict = {}
 
-    sa = gspread.service_account(filename=config['gssa_file'])
+    try:
 
+        sa = gspread.service_account(filename=config['gssa_file'])
+    except:
+        logging.error(f"Error fetching spreadsheet data {config['gssa_file']}")  
     ss_weeks = get_kaizen_weeks(init)
     
     
@@ -54,9 +57,11 @@ def main(config_file, init):
 
 
         squammies_dict[spreadsheet['name']] = {}
-
-        kaizen_sheet = sa.open(spreadsheet['name'])
-
+        try:
+            kaizen_sheet = sa.open(spreadsheet['name'])
+        except:
+            logging.error(f"Error fetching spreadsheet data {spreadsheet['name']}") 
+            
         for sheet in kaizen_sheet:
 
             if sheet.title == 'Setup':
