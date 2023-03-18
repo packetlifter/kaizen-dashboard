@@ -155,7 +155,7 @@ def main(config_file, init):
                 kaizen_data.append(dict_item)
 
             
-            index_name = f"kaizen-{config['es_index_name']}-{member_name.lower().replace(' ','')}-{sheet.title.lower()}"
+            index_name = f"{config['es_index_name']}-{member_name.lower().replace(' ','')}-{sheet.title.lower()}"
 
 
             
