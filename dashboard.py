@@ -32,7 +32,8 @@ def main(config_file, init):
         logging.error(f"Error fetching spreadsheet data {config['gssa_file']}")  
     ss_weeks = get_kaizen_weeks(init)
     
-    
+    index_name = f"{config['es_index_name']}"
+    es = Elasticsearch(config['es_host'],basic_auth=(config['es_username'],config['es_password'],),verify_certs=False)
 
     for spreadsheet in sa.list_spreadsheet_files(): # iterate through the spreadsheets in each service account/ team
 
@@ -46,10 +47,15 @@ def main(config_file, init):
         diff_in_seconds = (now - modified_time).total_seconds()
 
 
+            
         # skip spreadsheet if modified beyond 10 minutes and only fetching current week
         if (diff_in_seconds > 600) and len(ss_weeks) == 1:
+            
             continue
 
+
+        
+            
         #try:
         #    es.indices.delete(index=index_name)
         #except NotFoundError:
@@ -160,10 +166,13 @@ def main(config_file, init):
                 kaizen_data.append(dict_item)
 
             
-            index_name = f"{config['es_index_name']}-{member_name.lower().replace(' ','')}-{sheet.title.lower()}"
-
-
             
+            
+
+            es = Elasticsearch(config['es_host'],basic_auth=(config['es_username'],config['es_password'],),verify_certs=False)
+
+            if len(ss_weeks) == 1:
+                delete_current_data(index_name,dict_item['member_name'],dict_item['week'],es)
             
             actions = [
             {
@@ -173,26 +182,44 @@ def main(config_file, init):
             }
             for item in kaizen_data
             ]
-            try:
-                es = Elasticsearch(config['es_host'],basic_auth=(config['es_username'],config['es_password'],),verify_certs=False)
-                try:
-                    es.indices.delete(index=index_name)
-                except NotFoundError:
-                    pass
-                try:
-                    bulk(es, actions)
-                except Exception as e:
-                    logging.error(f"Error pushing data {actions}") 
-            except AuthenticationException:
-                es = Elasticsearch(config['es_host'],http_auth=(config['es_username'],config['es_password'],),verify_certs=False)
-                try:
-                    es.indices.delete(index=index_name)
-                except NotFoundError:
-                    pass
-                bulk(es, actions)
+            
+            bulk(es, actions)
 
     logging.info(f"Pushed data for Team {config['es_index_name']}") 
-        
+
+def delete_current_data(index_name,member_name,week,es):
+    
+        # define the date range to query
+
+    # define the query
+    query = {
+        "query": {
+          "bool": {
+      "filter": [
+        { "term": { "member_name.keyword": member_name }},
+        { "term": { "week.keyword": week }}
+        ]
+      }
+     }
+    }
+    
+    # execute the search query
+    response = es.search(index=index_name, body=query)
+    
+    # retrieve the IDs of the documents to delete
+    doc_ids = [hit["_id"] for hit in response["hits"]["hits"]]
+    
+    # delete the documents
+    for doc_id in doc_ids:
+        response = es.delete(index=index_name, id=doc_id)
+        if response["result"] == "deleted":
+            logging.info(f"Document with ID {doc_id} deleted successfully from index {index_name}")
+        else:
+            logging.error(f"Failed to delete document with ID {doc_id}")
+    
+    
+
+
 def shortened_name(name,mappings):
     
 
