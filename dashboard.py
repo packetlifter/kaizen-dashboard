@@ -161,8 +161,8 @@ def main(config_file, init):
                 week_score = row_values[70][6]
                 percent_score = week_score.replace('%','')
                 dict_item['week_score'] = float(percent_score)
-                
-                
+                nutrition_goal = row_values[5][2]
+                dict_item['nutrition_goal'] = nutrition_goal
                 kaizen_data.append(dict_item)
 
             
