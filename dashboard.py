@@ -124,7 +124,10 @@ def main(config_file, init):
 
                 elif key in ints_data:
                     if key == 'calories':
-                        spreadsheet_data_clean[key] = [int(item.replace(' cals', '').replace(',','').strip()) if item != -1 else item for item in actual_data]
+                        try:
+                            spreadsheet_data_clean[key] = [int(item.replace(' cals', '').replace(',','').strip()) if item != -1 else item for item in actual_data]
+                        except:
+                            import ipdb; ipdb.set_trace()
                     elif key == 'protein':
                         spreadsheet_data_clean[key] = [int(item.replace(' g', '').strip()) if item != -1 else item for item in actual_data]    
                     elif key == 'steps':
@@ -150,6 +153,7 @@ def main(config_file, init):
                 dict_item = dict(zip(tracker_keys, item))
                 
                 dict_item['week'] = sheet.title.replace('W','Week ')
+                dict_item['week_num'] = int(sheet.title.replace('W',''))
                 dict_item['member_name'] = member_name
 
                 if sheet.title != 'W1':
@@ -184,6 +188,7 @@ def main(config_file, init):
             ]
             
             bulk(es, actions)
+            time.sleep(5)
 
     logging.info(f"Pushed data for Team {config['es_index_name']}") 
 
