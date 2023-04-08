@@ -9,6 +9,7 @@ import sys
 import logging
 import pytz
 from elasticsearch.exceptions import AuthenticationException
+import re
 
 import urllib3
 urllib3.disable_warnings()
@@ -123,15 +124,7 @@ def main(config_file, init):
                         spreadsheet_data_clean[key] = actual_data
 
                 elif key in ints_data:
-                    if key == 'calories':
-                        try:
-                            spreadsheet_data_clean[key] = [int(item.replace(' cals', '').replace(',','').strip()) if item != -1 else item for item in actual_data]
-                        except:
-                            import ipdb; ipdb.set_trace()
-                    elif key == 'protein':
-                        spreadsheet_data_clean[key] = [int(item.replace(' g', '').strip()) if item != -1 else item for item in actual_data]    
-                    elif key == 'steps':
-                        spreadsheet_data_clean[key] = [int(item.replace(" steps", '').replace(',','').strip()) if item != -1 else item for item in actual_data]
+                    spreadsheet_data_clean[key] = [int(re.sub(r"[^\d]", "", item)) if item != -1 else item for item in actual_data]    
                     
             tracker_values =  [ item for item in spreadsheet_data_clean.values()]
             tracker_keys = [ item for item in spreadsheet_data_clean.keys()]
